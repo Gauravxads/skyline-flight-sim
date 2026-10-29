@@ -1,0 +1,120 @@
+<title>Skyline Flight Sim</title>
+<style>
+:root{--ink:#06101A;--panel:rgba(7,12,22,.82);--line:rgba(234,240,247,.35);--mint:#8CF2C4;--amber:#FFC36B;--red:#FF6B5B;--fg:#EAF0F7;--mute:rgba(234,240,247,.72);color-scheme:dark}
+html,body{margin:0;height:100%;background:#050A12;color:var(--fg);font-family:'Barlow',system-ui,sans-serif;overflow:hidden}
+#app{position:fixed;inset:0;background:#050A12}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{pointer-events:none}
+.hidden{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace}
+#menu{position:absolute;inset:0;display:flex;flex-direction:column;padding:clamp(16px,3.6vh,56px) max(16px,clamp(20px,5vw,64px));gap:clamp(10px,2vh,30px);background:linear-gradient(90deg,rgba(7,12,22,.9) 0%,rgba(7,12,22,.6) 36%,rgba(7,12,22,0) 62%);overflow:auto}
+#menu .kick{font:500 12px 'JetBrains Mono',monospace;letter-spacing:.2em;color:var(--mint)}
+#menu h1{margin:4px 0 0;font:700 clamp(48px,min(9vw,12vh),96px)/.92 'Barlow Condensed',sans-serif;letter-spacing:.02em}
+.modes{display:flex;flex-direction:column;gap:10px;width:min(360px,100%)}
+.mode{display:flex;justify-content:space-between;align-items:center;min-height:50px;padding:0 20px;border:1px solid var(--line);background:rgba(10,15,24,.45);font:600 22px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-align:left}
+.mode:hover{background:rgba(140,242,196,.12);border-color:var(--mint)}
+.mode.primary{background:var(--mint);color:#08121C;border-color:var(--mint);min-height:54px;font-size:25px}
+.mode.primary:hover{background:#a8f7d5}
+.mode small{font:500 12px 'JetBrains Mono',monospace;letter-spacing:.1em;opacity:.8}
+.opts{margin-top:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px 28px;max-width:860px}
+.opt .lab{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.16em;color:var(--amber);margin-bottom:8px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{min-height:44px;padding:0 14px;border:1px solid var(--line);background:transparent;font:600 19px 'Barlow Condensed',sans-serif}
+.seg button[aria-pressed=true]{border-color:var(--mint);background:rgba(140,242,196,.16)}
+.seg button:hover{border-color:var(--mint)}
+.time{display:flex;align-items:center;gap:12px;min-height:44px}
+.time input{flex:1;accent-color:var(--mint);min-width:80px}
+#acstat{position:absolute;right:clamp(16px,3vw,40px);bottom:clamp(14px,3vh,34px);font:500 12px 'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--mute);text-align:right;max-width:46vw}
+.hint{font:500 12px 'JetBrains Mono',monospace;letter-spacing:.08em;color:var(--mute)}
+#loading{position:absolute;inset:0;background:#050A12;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;z-index:9}
+#loading .t{font:700 56px 'Barlow Condensed',sans-serif;letter-spacing:.06em}
+#loading .bar{width:220px;height:3px;background:rgba(234,240,247,.2);overflow:hidden}
+#loading .bar i{display:block;width:40%;height:100%;background:var(--mint);animation:ld 1.1s ease-in-out infinite}
+#loading.failed .bar{display:none}
+@keyframes ld{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+#loadmsg{font:500 13px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--mute);text-align:center;padding:0 16px}
+.sheet{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(5,10,18,.62);padding:16px}
+.card{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);padding:28px 30px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow:auto}
+.card h2{margin:0;font:700 44px/1 'Barlow Condensed',sans-serif;letter-spacing:.03em}
+.card .kick{font:500 12px 'JetBrains Mono',monospace;letter-spacing:.2em;color:var(--amber)}
+.card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.card li{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid rgba(234,240,247,.15);font:500 13px 'JetBrains Mono',monospace;color:var(--mute)}
+.card li b{color:var(--fg);font-weight:500}
+.grade{font:700 120px/1 'Barlow Condensed',sans-serif;color:var(--mint)}.grade.gC{color:var(--amber)}.grade.gD{color:var(--red)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row .mode{flex:1;min-width:140px;justify-content:center}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font:500 13px 'JetBrains Mono',monospace;color:var(--mute)}
+.keys b{color:var(--mint);font-weight:500}
+
+#touch{position:absolute;inset:0;z-index:4;pointer-events:none;user-select:none;-webkit-user-select:none;touch-action:none;--b:clamp(42px,10vh,60px);--s:clamp(110px,34vh,168px)}
+#touch>*{pointer-events:auto;touch-action:none}
+#stick{position:absolute;left:max(18px,env(safe-area-inset-left,0px));bottom:max(18px,env(safe-area-inset-bottom,0px));width:var(--s);height:var(--s);border-radius:50%;border:2px solid rgba(140,242,196,.55);background:radial-gradient(circle,rgba(7,12,22,.35),rgba(7,12,22,.6))}
+#stick:before,#stick:after{content:"";position:absolute;background:rgba(140,242,196,.25)}
+#stick:before{left:50%;top:10%;bottom:10%;width:1px}#stick:after{top:50%;left:10%;right:10%;height:1px}
+#knob{position:absolute;left:50%;top:50%;width:38%;height:38%;margin:-19% 0 0 -19%;border-radius:50%;background:rgba(140,242,196,.5);border:2px solid var(--mint);pointer-events:none}
+#thr{position:absolute;right:max(18px,env(safe-area-inset-right,0px));bottom:max(18px,env(safe-area-inset-bottom,0px));width:clamp(46px,11vh,64px);height:clamp(100px,30vh,180px);border:2px solid rgba(140,242,196,.55);background:rgba(7,12,22,.55);overflow:hidden}
+#thrfill{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(140,242,196,.45);border-top:3px solid var(--mint);pointer-events:none}
+#thr span{position:absolute;left:0;right:0;top:6px;text-align:center;font:600 12px 'JetBrains Mono',monospace;letter-spacing:.1em;pointer-events:none}
+#tbtns{position:absolute;right:calc(max(18px,env(safe-area-inset-right,0px)) + clamp(46px,11vh,64px) + 12px);bottom:max(18px,env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,var(--b));gap:8px}
+#tbtns button{height:var(--b);padding:0;border:2px solid rgba(140,242,196,.55);background:rgba(7,12,22,.6);color:var(--fg);font:600 clamp(11px,2.8vh,15px) 'Barlow Condensed',sans-serif;letter-spacing:.06em;touch-action:none}
+#tbtns button.on,#tbtns button:active{background:rgba(140,242,196,.35);border-color:var(--mint)}
+#rotate{display:none;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(5,10,18,.8);font:600 26px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-align:center;padding:24px}
+@media (orientation:portrait){#touch>:not(#rotate){display:none}#rotate{display:flex}}
+html,body,#app{overscroll-behavior:none;touch-action:none}
+#menu,.card{touch-action:pan-y;-webkit-overflow-scrolling:touch}
+@media (max-height:520px){
+#menu{padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));gap:8px}
+#menu h1{font-size:40px}
+.modes{display:grid;grid-template-columns:1fr 1fr;width:min(560px,100%);gap:6px}
+.mode,.mode.primary{min-height:36px;font-size:18px;padding:0 14px}
+.opts{gap:8px 18px}.opt .lab{margin-bottom:4px}
+.seg button,.time{min-height:34px}.seg button{font-size:16px;padding:0 10px}
+#acstat{display:none}.card{padding:16px 20px;gap:8px}.grade{font-size:70px}.card h2{font-size:32px}
+}
+@media (max-width:700px){#acstat{display:none}.opts{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){#loading .bar i{animation:none;width:100%}}
+</style>
+<div id="app">
+  <canvas id="gl" aria-label="Flight view"></canvas>
+  <canvas id="hud" aria-hidden="true"></canvas>
+  <div id="menu" class="hidden">
+    <div><div class="kick">FLIGHT SIMULATOR</div><h1>SKYLINE</h1></div>
+    <div class="modes">
+      <button class="mode primary" data-mode="free" id="flynow">FLY NOW <small>ENTER</small></button>
+      <button class="mode" data-mode="landing">TAKEOFF TO LANDING</button>
+      <button class="mode" data-mode="rings">RING RUN</button>
+      <button class="mode" data-mode="school">FLIGHT SCHOOL</button>
+    </div>
+    <div class="opts">
+      <div class="opt"><div class="lab">AIRCRAFT</div><div class="seg" id="g-ac"><button data-v="skylark" aria-pressed="true">Skylark</button><button data-v="falcon" aria-pressed="false">Falcon</button><button data-v="atlas" aria-pressed="false">Atlas</button></div></div>
+      <div class="opt"><div class="lab">AIRPORT</div><div class="seg" id="g-ap"><button data-v="CPT" aria-pressed="true">Coral Point</button><button data-v="GRP" aria-pressed="false">Granite Peak</button><button data-v="SBZ" aria-pressed="false">Seabreeze</button></div></div>
+      <div class="opt"><div class="lab">TIME OF DAY</div><div class="time"><input id="time" type="range" min="0" max="24" step="0.25" value="17.5" aria-label="Time of day"><span class="mono" id="timeval">17:30</span></div></div>
+      <div class="opt"><div class="lab">WEATHER</div><div class="seg" id="g-wx"><button data-v="clear" aria-pressed="true">Clear</button><button data-v="cloudy" aria-pressed="false">Cloudy</button><button data-v="windy" aria-pressed="false">Windy</button><button data-v="hazy" aria-pressed="false">Hazy</button></div></div>
+      <div class="opt"><div class="lab">START</div><div class="seg" id="g-st"><button data-v="runway" aria-pressed="true">On runway</button><button data-v="air" aria-pressed="false">In the air</button></div></div>
+      <div class="opt" id="destrow"><div class="lab">DESTINATION (TAKEOFF TO LANDING)</div><div class="seg" id="g-dest"><button data-v="CPT" aria-pressed="false">Coral Point</button><button data-v="GRP" aria-pressed="true">Granite Peak</button><button data-v="SBZ" aria-pressed="false">Seabreeze</button></div></div>
+    </div>
+    <div class="hint">Keyboard or gamepad. W S A D fly, Q E rudder, Shift and Ctrl throttle. Drag to look around.</div>
+    <div id="acstat"></div>
+  </div>
+  <div id="touch" class="hidden" aria-label="Touch flight controls">
+    <div id="stick" aria-label="Pitch and roll stick"><i id="knob"></i></div>
+    <div id="tbtns">
+      <button data-k="KeyG">GEAR</button><button data-k="KeyF">FLAP +</button><button data-k="KeyV">FLAP -</button><button data-k="KeyB" data-hold="1">BRAKE</button>
+      <button data-k="KeyQ" data-hold="1">RUD L</button><button data-k="KeyE" data-hold="1">RUD R</button><button data-k="KeyC">CAM</button><button data-k="KeyP">PAUSE</button>
+    </div>
+    <div id="thr" aria-label="Throttle"><i id="thrfill"></i><span>THR</span></div>
+    <div id="rotate">ROTATE YOUR PHONE<br>TO LANDSCAPE TO FLY</div>
+  </div>
+  <div id="loading"><div class="t">SKYLINE</div><div class="bar"><i></i></div><div id="loadmsg">Loading</div></div>
+  <div id="pause" class="sheet hidden"><div class="card">
+    <div class="kick">PAUSED</div><h2>Flight paused</h2>
+    <div class="keys"><b>W S</b><span>Pitch down / up</span><b>A D</b><span>Roll left / right</span><b>Q E</b><span>Rudder, nose wheel steering</span><b>Shift Ctrl</b><span>Throttle up / down (Z idle, X full, 1-0 set)</span><b>G</b><span>Landing gear</span><b>F V</b><span>Flaps down / up</span><b>B Space</b><span>Wheel brakes</span><b>[ ]</b><span>Pitch trim</span><b>C</b><span>Camera: chase, cockpit, orbit</span><b>Y</b><span>Flight assist on / off</span><b>H M R</b><span>HUD, sound, restart</span></div>
+    <div class="row"><button class="mode primary" id="resume">RESUME</button><button class="mode" id="restart">RESTART</button><button class="mode" id="tomenu">MAIN MENU</button></div>
+  </div></div>
+  <div id="end" class="sheet hidden"><div class="card">
+    <div class="kick" id="endkicker"></div><h2 id="endtitle"></h2><div id="endgrade" class="hidden"></div><ul id="endlines"></ul>
+    <div class="row"><button class="mode primary" id="endretry">FLY AGAIN</button><button class="mode hidden" id="endcont">KEEP FLYING</button><button class="mode" id="endmenu">MAIN MENU</button></div>
+  </div></div>
+</div>
